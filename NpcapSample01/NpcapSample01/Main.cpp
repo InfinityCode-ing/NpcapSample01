@@ -74,7 +74,7 @@ typedef struct _USER_PACKET
 
 /////////////////////////////////////////////////////////////////////////////
 
-std::string makeKey(H_IP*);
+void makeKey(H_IP*, std::string&);
 
 /////////////////////////////////////////////////////////////////////////////
 
@@ -151,7 +151,6 @@ int main()
 
 	/* Retrieve the packets */
 	int res;
-	//std::map<std::string, multimap<u_long, JPACKET>*> key_talbe;
 	std::map<std::string, std::multimap<u_long, USER_PACKET>*> packet_talbe;
 	while ((res = pcap_next_ex(adhandle, &header, &pkt_data)) >= 0)
 	{
@@ -167,7 +166,8 @@ int main()
 		if (pIP->Protocol != nTCP_TYPE) continue;
 
 		// key = "src-ip : src-port | dst-ip : dst-port"
-		std::string key = makeKey(pIP);
+		std::string key;
+		makeKey(pIP, key);
 		auto tcpStream = packet_talbe.find(key);
 
 		H_TCP *pTCP = (H_TCP*)(pkt_data + sizeof(H_ETHER) + pIP->IHL * 4);
@@ -255,18 +255,16 @@ int main()
 
 /////////////////////////////////////////////////////////////////////////////
 
-std::string makeKey(H_IP* pIP)
+void makeKey(H_IP *pIP, std::string &key)
 {
 	H_TCP *pTCP = (H_TCP*)((u_int)pIP + pIP->IHL * 4);
-	std::string key = inet_ntoa(*(PIN_ADDR)pIP->SrcAddr);
+	key = inet_ntoa(*(PIN_ADDR)pIP->SrcAddr);
 	key += ":";
 	key += std::to_string(ntohs(pTCP->SrcPort));
 	key += "|";
 	key += inet_ntoa(*(PIN_ADDR)pIP->DstAddr);
 	key += ":";
 	key += std::to_string(ntohs(pTCP->DstPort));
-
-	return key;
 }
 
 /////////////////////////////////////////////////////////////////////////////
